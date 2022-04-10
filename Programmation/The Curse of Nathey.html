@@ -1,0 +1,2285 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" /><title>The Curse of Nathey</title>
+<script
+src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+<style type="text/css"> body { margin: 0; }</style>
+</head>
+<body>
+    <script type="text/javascript">
+
+    class menu extends Phaser.Scene {
+        constructor() {
+          super({ key: "menu" });
+        }
+        //on charge les images
+        preload() {
+          this.load.image("menu_fond", "Asset-TCON/decor.png");
+          this.load.image("imageBoutonPlay", "Asset-TCON/play.png");}
+        create() {
+          this.add
+            .image(0, 0, "menu_fond")
+            .setOrigin(0)
+            .setDepth(0);
+        
+          var bouton_play = this.add.image(650, 450, "imageBoutonPlay").setDepth(1);
+          bouton_play.setInteractive();
+
+          bouton_play.on("pointerup", () => {
+            this.scene.start("scene1");
+          });
+        }
+} 
+    class scene1 extends Phaser.Scene{
+        constructor(){
+            super("scene1");
+        }
+        preload(){
+            this.load.image('village1', 'Asset-TCON/Enviro-1.png');
+            this.load.tilemapTiledJSON("map1", "Village.json");
+            this.load.image('proj', 'Asset-TCON/Projectile.png');
+            this.load.image('tp', 'Asset-TCON/tp.png');
+            this.load.image('hitbox','Asset-TCON/hitbox.png');
+            this.load.image('vie1', 'Asset-TCON/vie1.png');
+            this.load.image('vie2', 'Asset-TCON/vie2.png');
+            this.load.image('vie3', 'Asset-TCON/vie3.png');
+            this.load.image('vie4', 'Asset-TCON/vie4.png');
+            this.load.image('vie5', 'Asset-TCON/vie5.png');
+            this.load.image('arme', 'Asset-TCON/armeI.png');
+            this.load.image('bombe', 'Asset-TCON/poudreI.png');
+            this.load.image('sans', 'Asset-TCON/armeI-sanspoudre.png');
+            this.load.image('bois', 'Asset-TCON/bois-village2.png');
+            //Personnages
+            this.load.spritesheet('perso','Asset-TCON/Perso-Normal-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            //this.load.spritesheet('caillou','Asset-TCON/Caillou-Sheet.png',
+            //{ frameWidth: 32, frameHeight: 16 });
+        }
+        create(){
+            //Importation Tiled et Layers
+            const mapNiveau = this.make.tilemap({ key : "map1", tileWidth: 960, tileHeight: 1280});
+            const tileset = mapNiveau.addTilesetImage("Enviro-1","village1");
+            const sol = mapNiveau.createLayer("sol",tileset, 0, 0);
+            const falaise = mapNiveau.createLayer("falaise",tileset, 0, 0);
+            const chemin = mapNiveau.createLayer("chemin",tileset, 0, 0);
+            const potos = mapNiveau.createLayer("potos",tileset, 0, 0);
+            const herbe2 = mapNiveau.createLayer("herbe2",tileset, 0, 0);
+            const herbe = mapNiveau.createLayer("herbe",tileset, 0, 0);
+            const foret3 = mapNiveau.createLayer("foret3",tileset, 0, 0);
+            const foret2 = mapNiveau.createLayer("foret2",tileset, 0, 0);
+            const foret1 = mapNiveau.createLayer("foret1",tileset, 0, 0);
+            const caillou = mapNiveau.createLayer("caillou",tileset, 0, 0);
+            const plante = mapNiveau.createLayer("plante",tileset, 0, 0);
+            const eau = mapNiveau.createLayer("eau",tileset, 0, 0);
+
+            //Collisions Layers
+            this.physics.add.collider(this.player, eau);
+            //this.physics.add.collider(this.monstre3, eau);
+            eau.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, foret1);
+            //this.physics.add.collider(this.monstre3, foret1);
+            foret1.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player,foret2);
+            //this.physics.add.collider(this.monstre3,foret2);
+            foret2.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, foret3);
+            //this.physics.add.collider(this.monstre3, foret3);
+            foret3.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, potos);
+            //this.physics.add.collider(this.monstre3, potos);
+            potos.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, falaise);
+            //this.physics.add.collider(this.monstre3, falaise);
+            falaise.setCollisionByProperty({"estsolide": true});
+            
+            //Redimentionnement du monde
+            this.physics.world.setBounds(0, 0, 1280, 960);
+            //Ajout du champs de la caméra de taille identique à celle du monde
+            this.cameras.main.setBounds(0, 0, 1280, 960);
+
+            //Perso
+            this.player = this.physics.add.sprite(70, 450, 'perso');
+            this.player.body.setSize(19,25, true);
+            this.player.setCollideWorldBounds(true);
+            //Animation Perso-Normal
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'base',
+                frames: [ { key: 'perso', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+            
+            ////Caillou
+            //this.monstre3 = this.physics.add.sprite(500, 250, 'caillou').play('sleepc');
+            //this.monstre3.body.setSize(32,28, true);
+            //this.monstre3.setCollideWorldBounds(true);
+            ////Animation Caillou
+            //this.anims.create({
+            //    key: 'sleepc',
+            //    frames: [ { key: 'caillou', frame: 0 } ],
+            //    frameRate: 0
+            //    });
+            //this.anims.create({
+            //    key: 'wakeupc',
+            //    frames: this.anims.generateFrameNumbers('caillou', {start:0,end:2}),
+            //    frameRate: 50,
+            //    repeat: -1
+            //    });
+            //this.anims.create({
+            //    key: 'basec',
+            //    frames: [ { key: 'caillou', frame: 0 } ],
+            //    frameRate: 0
+            //    });
+            //this.anims.create({
+            //    key: 'attaquec',
+            //    frames: this.anims.generateFrameNumbers('caillou', {start:2,end:5}),
+            //    frameRate: 10,
+            //    repeat: -1
+            //    });
+            ////Interactions Caillou/Player
+            //this.onec = false
+            //this.attaque = false
+            //this.physics.add.overlap(this.player, this.monstre3, this.monstre3wake, this.condition3, this)
+            //this.physics.add.collider(this.player, this.monstre3, this.monstre3attaque, null, this)
+
+            //projectiles Caillou
+            //this.projs = this.physics.add.group();
+            //this.physics.add.collider(this.projs, this.player, this.HitPlayer);
+
+            //Jeu
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keyC;
+            this.keyM;
+            this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+
+            //Camera
+            this.cameras.main.startFollow(this.player, true);
+            this.cameras.main.setZoom(3);
+            this.cameras.main.setSize(1280, 720);
+
+            //Afficher texte sur l'Ecran
+            this.piece = 0;
+            this.pieceTxt=this.add.text(835,260,'0',{fontSize:'20px',fill:'#000'}).setScrollFactor(0);
+            this.sceneText=this.add.text(430,273,'Scene 1',{fontSize:'10px',fill:'#000'}).setScrollFactor(0);
+
+
+            //Teleporteur vers Scene 2
+            this.tp = this.physics.add.sprite(1265, 655, 'tp');
+            this.physics.add.collider(this.player, this.tp, this.tpscene, null, this);
+            
+            //var startTimer = false;
+            this.connect = false;
+            this.manette;
+            this.change = false;
+            //Icone Vie
+            this.vie = 1
+            this.vies = this.add.image(470,260, 'vie1')
+            this.vies.setScrollFactor(0);
+
+            this.Sans = this.add.image(770,260, 'sans')
+            this.Sans.setScrollFactor(0);
+
+            this.controls=this.add.text(530,250,'Control: Clavier (m)',{fontSize:'13px',fill:'#000'});
+            this.controls.setScrollFactor(0);
+            this.control = ''
+
+            //Speciale
+            //this.cassable = this.physics.add.sprite(1260, 655, 'bois');
+            //this.physics.add.collider(this.player, this.cassable, this.touche, null, this);
+
+        }
+        update(){
+            if (this.gameOver){return;}
+            this.input.on('pointerdown', function (pointer) {
+                //startTimer = true
+            })
+            this.input.gamepad.once('connected', function (pad){
+                console.log(this.scene)
+                this.scene.connect = true
+                this.scene.manette = pad});
+                //Clique sur M = Manette
+                if (this.keyM.isDown && this.change == false){
+                    console.log('Manette');
+                    this.change = true;
+                    this.control = 'Manette (c)';
+                    this.controls.setText('Control: ' + this.control);
+                    //this.icone.setTexture('Manette');
+                }
+                //Clique sur C = Clavier  
+                if (this.keyC.isDown && this.change == true){
+                    console.log('Clavier');
+                    this.change = false;
+                    this.control = 'Clavier (m)';
+                    this.controls.setText('Control: ' + this.control);
+                }
+
+            //Controls Clavier
+            if (this.change == false){
+                if (this.cursors.up.isDown){
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityY(-150);
+                            this.player.anims.play('down', true);}
+                }
+                else if (this.cursors.down.isDown){
+                            this.player.setVelocityY(150);
+                            this.player.anims.play('up', true);}
+                else if (this.cursors.left.isDown){
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityX(-150);
+                            this.player.anims.play('left', true);}
+                }
+                else if (this.cursors.right.isDown){
+                            this.player.setVelocityX(150);
+                            this.player.anims.play('right', true);}
+                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+
+            //Controls Manette
+            if (this.connect == true && this.change == true){ 
+                if (this.manette.leftStick.x >0.5 ){
+                        this.player.setVelocityX(120);
+                        this.player.anims.play('right', true);}
+                    else if (this.manette.leftStick.x < -0.5){
+                        this.player.setVelocityX(-120);
+                        this.player.anims.play('left', true);}
+                    else if (this.manette.leftStick.y < -0.5){
+                        this.player.setVelocityY(-120);
+                        this.player.anims.play('down', true);} 
+                    else if (this.manette.leftStick.y >0.5){
+                        this.player.setVelocityY(120);
+                        this.player.anims.play('up', true);}  
+                    else {
+                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+                        this.player.anims.play('base');}
+                    }
+        }
+        touche(cassable){
+            this.cassable.setVisible(false);
+            this.cassable.disableBody(true,true);
+        }
+        //condition3(){
+        //    if (this.onec == false){
+        //        this.tapec = false
+        //        return true
+        //    }
+        //    return false
+        //}
+        //monstre3wake(){
+        //    if (this.tapec == false){
+        //        this.monstre3.anims.play('wakeupc', true);
+        //        this.onec = true;
+        //        this.tapec = true;
+        //        this.attaque = true;
+        //        }
+        //}
+        //monstre3attaque(){
+        //    this.monstre3.setVelocity(0)
+        //    if (this.onec == true){
+        //        this.monstre3.anims.play('basec', true);}
+        //    if (this.tapec == true && this.attaque == true){
+        //        this.monstre3.anims.play('attaquec', true);}
+        //    }
+
+        tpscene(){
+        this.scene.start("scene2"),{vie: this.vie,piece: this.piece}}
+    };
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    class scene2 extends Phaser.Scene{
+        constructor(){
+            super("scene2"); 
+        }
+        init(data){this.vie = data.vie,this.piece = data.piece}
+        preload(){
+            this.load.image('foret1', 'Asset-TCON/Enviro-2.png');
+            this.load.tilemapTiledJSON("map2", "Foret.json")
+            this.load.image('proj', 'Asset-TCON/Projectile.png');
+            this.load.image('tp', 'Asset-TCON/tp.png');
+            this.load.image('hitbox', 'Asset-TCON/hitbox.png',);
+            this.load.image('vie1', 'Asset-TCON/vie1.png',);
+            this.load.image('vie2', 'Asset-TCON/vie2.png',);
+            this.load.image('vie3', 'Asset-TCON/vie3.png',);
+            this.load.image('vie4', 'Asset-TCON/vie4.png',);
+            this.load.image('vie5', 'Asset-TCON/vie5.png',);
+            this.load.image('arme', 'Asset-TCON/armeI.png',);
+            this.load.image('bombe', 'Asset-TCON/poudreI.png',);
+            this.load.image('sans', 'Asset-TCON/armeI-sanspoudre.png',);
+            this.load.image('bois', 'Asset-TCON/bois-foret.png',);
+            this.load.image('maledic', 'Asset-TCON/Maledic.png',);
+            //Personnages
+            this.load.spritesheet('perso','Asset-TCON/Perso-Normal-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+        }
+        create(){
+            //Importation Tiled et Layers
+            const mapNiveau2 = this.make.tilemap({ key : "map2", tileWidth: 4800, tileHeight: 960});
+            const tileset = mapNiveau2.addTilesetImage("Enviro-2","foret1");
+            const sol = mapNiveau2.createLayer("sol",tileset, 0, 0);
+            const falaise = mapNiveau2.createLayer("falaise",tileset, 0, 0);
+            const chemin = mapNiveau2.createLayer("chemin",tileset, 0, 0);
+            const foret3 = mapNiveau2.createLayer("foret3",tileset, 0, 0);
+            const potos = mapNiveau2.createLayer("potos",tileset, 0, 0);
+            const herbe2 = mapNiveau2.createLayer("herbe2",tileset, 0, 0);
+            const herbe = mapNiveau2.createLayer("herbe",tileset, 0, 0);
+            const foret2 = mapNiveau2.createLayer("foret2",tileset, 0, 0);
+            const foret1 = mapNiveau2.createLayer("foret1",tileset, 0, 0);
+            const eau = mapNiveau2.createLayer("eau",tileset, 0, 0);
+            const caillou = mapNiveau2.createLayer("caillou",tileset, 0, 0);
+            const plante = mapNiveau2.createLayer("plante",tileset, 0, 0);
+
+            //Collisions Layers
+            this.physics.add.collider(this.player, eau);
+            //this.physics.add.collider(this.monstre1, eau);
+            eau.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, foret1);
+            //this.physics.add.collider(this.monstre1, foret1);
+            foret1.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player,foret2);
+            //this.physics.add.collider(this.monstre1,foret2);
+            foret2.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, potos);
+            //this.physics.add.collider(this.monstre1, potos);
+            potos.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, foret3);
+            //this.physics.add.collider(this.monstre1, foret3);
+            foret3.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, falaise);
+            //this.physics.add.collider(this.monstre1, falaise);
+            falaise.setCollisionByProperty({"estsolide": true})
+
+            //Redimentionnement du monde
+            this.physics.world.setBounds(0, 0, 4800, 960);
+            //Ajout du champs de la camera de taille identique à celle du monde
+            this.cameras.main.setBounds(0, 0, 4800, 960);
+
+            //Perso
+            this.player = this.physics.add.sprite(10, 310, 'perso');
+            this.player.body.setSize(19,25, true);
+            this.player.setCollideWorldBounds(true);
+            //Animation Perso-Normal
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'base',
+                frames: [ { key: 'perso', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            
+
+            //Camera
+            this.cameras.main.startFollow(this.player, true);
+            this.cameras.main.setZoom(3);
+            this.cameras.main.setSize(1280, 720);
+            //Jeu
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keyC;
+            this.keyM;
+            this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+            
+            //Teleporteur vers Scene 2
+            //this.tp = this.physics.add.sprite(160, 950, 'tp');
+            //this.physics.add.collider(this.player, this.tp, this.tpscene, null, this);
+
+            //Afficher texte sur l'Ecran
+            this.pieceTxt=this.add.text(835,260,'0',{fontSize:'20px',fill:'#000'}).setScrollFactor(0);
+            this.sceneText=this.add.text(430,273,'Scene 2',{fontSize:'10px',fill:'#000'}).setScrollFactor(0);
+
+            //Icone Vie
+            this.vies = this.add.image(470,260, 'vie1')
+            this.vies.setScrollFactor(0);
+
+            this.Sans = this.add.image(770,260, 'sans')
+            this.Sans.setScrollFactor(0);
+
+            this.controls=this.add.text(530,250,'Control: Clavier (m)',{fontSize:'13px',fill:'#000'});
+            this.controls.setScrollFactor(0);
+            this.control = ''
+
+            //Speciale
+            this.cassable1 = this.physics.add.sprite(4385, 240, 'bois');
+            this.cassable2 = this.physics.add.sprite(720, 140, 'bois');
+            this.maledic = this.physics.add.sprite(2100, 650, 'maledic');
+            this.physics.add.collider(this.player, this.cassable1, this.touche, null, this);
+            this.physics.add.collider(this.player, this.cassable2, this.touche, null, this);
+            this.physics.add.collider(this.player, this.maledic, this.tpscene, null, this);
+            
+        }
+        update(){
+            if (this.gameOver){return;}
+            this.input.on('pointerdown', function (pointer) {
+                //startTimer = true
+            })
+            this.input.gamepad.once('connected', function (pad){
+                console.log(this.scene)
+                this.scene.connect = true
+                this.scene.manette = pad});
+                //Clique sur M = Manette
+                if (this.keyM.isDown && this.change == false)
+                    {console.log('Manette');
+                    this.change = true;
+                    this.control = 'Manette (c)';
+                    this.controls.setText('Control: ' + this.control);
+                    //this.icone.setTexture('Manette');
+                }
+                //Clique sur C = Clavier  
+                if (this.keyC.isDown && this.change == true)
+                    {console.log('Clavier');
+                    this.change = false;
+                    this.control = 'Clavier (m)';
+                    this.controls.setText('Control: ' + this.control);
+                }
+
+            //Controls Clavier
+            if (this.change == false){
+                if (this.cursors.up.isDown){
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityY(-150);
+                            this.player.anims.play('down', true);}
+                }
+                else if (this.cursors.down.isDown){
+                            this.player.setVelocityY(150);
+                            this.player.anims.play('up', true);}
+                else if (this.cursors.left.isDown){
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityX(-150);
+                            this.player.anims.play('left', true);}
+                }
+                else if (this.cursors.right.isDown){
+                            this.player.setVelocityX(150);
+                            this.player.anims.play('right', true);}
+                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+
+            //Controls Manette
+            if (this.connect == true && this.change == true){ 
+                    
+                if (this.manette.leftStick.x >0.5 ){
+                        this.player.setVelocityX(120);
+                        this.player.anims.play('right', true);}
+                    else if (this.manette.leftStick.x < -0.5){
+                        this.player.setVelocityX(-120);
+                        this.player.anims.play('left', true);}
+                    else if (this.manette.leftStick.y < -0.5){
+                        this.player.setVelocityY(-120);
+                        this.player.anims.play('down', true);} 
+                    else if (this.manette.leftStick.y >0.5){
+                        this.player.setVelocityY(120);
+                        this.player.anims.play('up', true);}  
+                    else {
+                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+                        this.player.anims.play('base');}
+                    }
+        }
+        touche(){
+            this.cassable.setVisible(false);
+            this.cassable.disableBody(true,true);}
+        tpscene(){
+        this.scene.start("scene3"),{vie:this.vie,piece:this.piece}}
+    };
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+class scene3 extends Phaser.Scene{
+        constructor(){
+            super("scene3"); 
+        }
+        init(data){this.vie = data.vie,this.piece = data.piece}
+        preload(){
+            this.load.image('foret1', 'Asset-TCON/Enviro-2.png');
+            this.load.tilemapTiledJSON("map2", "Foret.json")
+            this.load.image('proj', 'Asset-TCON/Projectile.png');
+            this.load.image('tp', 'Asset-TCON/tp.png');
+            this.load.image('hitbox', 'Asset-TCON/hitbox.png',);
+            this.load.image('vie1', 'Asset-TCON/vie1.png',);
+            this.load.image('vie2', 'Asset-TCON/vie2.png',);
+            this.load.image('vie3', 'Asset-TCON/vie3.png',);
+            this.load.image('vie4', 'Asset-TCON/vie4.png',);
+            this.load.image('vie5', 'Asset-TCON/vie5.png',);
+            this.load.image('arme', 'Asset-TCON/armeI.png',);
+            this.load.image('bombe', 'Asset-TCON/poudreI.png',);
+            this.load.image('sans', 'Asset-TCON/armeI-sanspoudre.png',);
+            this.load.image('boisf', 'Asset-TCON/bois-foret.png',);
+            this.load.image('boisv', 'Asset-TCON/bois-village2.png',);
+            //Personnages
+            this.load.spritesheet('perso-att','Asset-TCON/Perso-Evil-Att-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('perso-evil','Asset-TCON/Perso-Evil-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('plante','Asset-TCON/Plante-Sheet.png',
+            { frameWidth: 32, frameHeight: 20 });
+        }
+        create(){
+            //Importation Tiled et Layers
+            const mapNiveau2 = this.make.tilemap({ key : "map2", tileWidth: 4800, tileHeight: 960});
+            const tileset2 = mapNiveau2.addTilesetImage("Enviro-2","foret1");
+            const sol = mapNiveau2.createLayer("sol",tileset2, 0, 0);
+            const falaise = mapNiveau2.createLayer("falaise",tileset2, 0, 0);
+            const chemin = mapNiveau2.createLayer("chemin",tileset2, 0, 0);
+            const foret3 = mapNiveau2.createLayer("foret3",tileset2, 0, 0);
+            const potos = mapNiveau2.createLayer("potos",tileset2, 0, 0);
+            const herbe2 = mapNiveau2.createLayer("herbe2",tileset2, 0, 0);
+            const herbe = mapNiveau2.createLayer("herbe",tileset2, 0, 0);
+            const foret2 = mapNiveau2.createLayer("foret2",tileset2, 0, 0);
+            const foret1 = mapNiveau2.createLayer("foret1",tileset2, 0, 0);
+            const eau = mapNiveau2.createLayer("eau",tileset2, 0, 0);
+            const caillou = mapNiveau2.createLayer("caillou",tileset2, 0, 0);
+            const plante = mapNiveau2.createLayer("plante",tileset2, 0, 0);
+
+            //Collisions Layers
+            this.physics.add.collider(this.player, eau);
+            this.physics.add.collider(this.monstre1, eau);
+            eau.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, foret1);
+            this.physics.add.collider(this.monstre1, foret1);
+            foret1.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player,foret2);
+            this.physics.add.collider(this.monstre1,foret2);
+            foret2.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, potos);
+            this.physics.add.collider(this.monstre1, potos);
+            potos.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, foret3);
+            this.physics.add.collider(this.monstre1, foret3);
+            foret3.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, falaise);
+            this.physics.add.collider(this.monstre1, falaise);
+            falaise.setCollisionByProperty({"estsolide": true})
+
+            //Redimentionnement du monde
+            this.physics.world.setBounds(0, 0, 4800, 960);
+            //Ajout du champs de la camera de taille identique à celle du monde
+            this.cameras.main.setBounds(0, 0, 4800, 960);
+
+            //Perso
+            this.player = this.physics.add.sprite(2100, 650, 'perso-evil');
+            this.player.body.setSize(19,25, true);
+            this.player.setCollideWorldBounds(true);
+
+            //Animation Perso-Evil
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'base',
+                frames: [ { key: 'perso-evil', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Animation Perso-Evil-Attaque
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:15,end:19}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:10,end:14}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:5,end:9}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:0,end:4}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Plante
+            this.monstre1 = this.physics.add.sprite(570, 640, 'plante').play('sleepp');
+            this.monstre1.body.setSize(20,20, true);
+            this.monstre1.setCollideWorldBounds(true);
+            this.physics.add.collider(this.monstre1, this.monstre2);
+            this.physics.add.collider(this.monstre1, this.monstre3);
+            //Animation Plante
+            this.anims.create({
+                key: 'sleepp',
+                frames: [ { key: 'plante', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'wakeupp',
+                frames: this.anims.generateFrameNumbers('plante', {start:0,end:5}),
+                frameRate: 50,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'leftp',
+                frames: this.anims.generateFrameNumbers('plante', {start:5,end:8}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'rightp',
+                frames: this.anims.generateFrameNumbers('plante', {start:8,end:5}),
+                frameRate: 10,
+                repeat: -1
+                });
+            //Interactions Plante/Player
+            this.hitbox1 = this.physics.add.sprite(this.monstre1.body.x + 15, this.monstre1.body.y + 14, 'hitbox');
+            this.tapep = false;
+            this.onep = true;
+            this.physics.add.overlap(this.player, this.hitbox1, this.monstre1Follow, null, this);
+            //this.physics.add.collider(this.player, this.monstre1, this.monstre1att, null, this)
+
+            //Camera
+            this.cameras.main.startFollow(this.player, true);
+            this.cameras.main.setZoom(3);
+            this.cameras.main.setSize(1280, 720);
+
+            //Jeu
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keyC;
+            this.keyM;
+            this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+            
+            //Teleporteur vers Scene 2
+            this.tp = this.physics.add.sprite(160, 950, 'tp');
+            this.physics.add.collider(this.player, this.tp, this.tpscene, null, this);
+
+            //Afficher texte sur l'Ecran
+            this.pieceTxt=this.add.text(835,260,'0',{fontSize:'20px',fill:'#000'}).setScrollFactor(0);
+            this.sceneText=this.add.text(430,273,'Scene 2',{fontSize:'10px',fill:'#000'}).setScrollFactor(0);
+
+            //Icone Vie
+            this.vies = this.add.image(470,260, 'vie1')
+            this.vies.setScrollFactor(0);
+
+            this.Sans = this.add.image(770,260, 'sans')
+            this.Sans.setScrollFactor(0);
+
+            this.controls=this.add.text(530,250,'Control: Clavier (m)',{fontSize:'13px',fill:'#000'});
+            this.controls.setScrollFactor(0);
+            this.control = ''
+
+            //Speciale
+            this.cassable1 = this.physics.add.sprite(4385, 240, 'boisf');
+            this.cassable2 = this.physics.add.sprite(720, 140, 'boisf');
+            this.cassable3 = this.physics.add.sprite(15, 320, 'boisv');
+            this.physics.add.collider(this.player, this.cassable1, this.touche, null, this);
+            this.physics.add.collider(this.player, this.cassable2, this.touche, null, this);
+            this.physics.add.collider(this.player, this.cassable3, this.touche, null, this);
+        }
+        update(){
+            if (this.gameOver){return;}
+            this.input.on('pointerdown', function (pointer) {
+                //menuDebut.destroy();
+                //startTimer = true
+            })
+            this.input.gamepad.once('connected', function (pad){
+                console.log(this.scene)
+                this.scene.connect = true
+                this.scene.manette = pad});
+                //Clique sur M = Manette
+                if (this.keyM.isDown && this.change == false)
+                    {console.log('Manette');
+                    this.change = true;
+                    this.control = 'Manette (c)';
+                    this.controls.setText('Control: ' + this.control);
+                    //this.icone.setTexture('Manette');
+                }
+                //Clique sur C = Clavier  
+                if (this.keyC.isDown && this.change == true)
+                    {console.log('Clavier');
+                    this.change = false;
+                    this.control = 'Clavier (m)';
+                    this.controls.setText('Control: ' + this.control);
+                }
+
+            //Controls Clavier
+            if (this.change == false){
+                if (this.cursors.up.isDown){
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityY(-150);
+                            this.player.anims.play('down', true);}
+                }
+                else if (this.cursors.down.isDown){
+                            this.player.setVelocityY(150);
+                            this.player.anims.play('up', true);}
+                else if (this.cursors.left.isDown){
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityX(-150);
+                            this.player.anims.play('left', true);}
+                }
+                else if (this.cursors.right.isDown){
+                            this.player.setVelocityX(150);
+                            this.player.anims.play('right', true);}
+                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+
+            //Controls Manette
+            if (this.connect == true && this.change == true){ 
+                    
+                if (this.manette.leftStick.x >0.5 ){
+                        this.player.setVelocityX(120);
+                        this.player.anims.play('right', true);}
+                    else if (this.manette.leftStick.x < -0.5){
+                        this.player.setVelocityX(-120);
+                        this.player.anims.play('left', true);}
+                    else if (this.manette.leftStick.y < -0.5){
+                        this.player.setVelocityY(-120);
+                        this.player.anims.play('down', true);} 
+                    else if (this.manette.leftStick.y >0.5){
+                        this.player.setVelocityY(120);
+                        this.player.anims.play('up', true);}  
+                    else {
+                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+                        this.player.anims.play('base');}
+                    }
+        }
+        touche(){
+            this.cassable.setVisible(false);
+            this.cassable.disableBody(true,true);}
+
+        monstre1Follow(){
+            if (this.onep == true){
+                this.monstre1.anims.play('wakeupp', true);
+                this.onep = false;
+                this.tapep = true;}
+            if (this.tapep == true){
+                this.physics.moveToObject(this.monstre1, this.player, 40)
+                this.physics.moveToObject(this.hitbox1, this.monstre1, 40)
+            if (this.monstre1.body.velocity.x < 0 ){
+                this.monstre1.anims.play('leftp', true)}
+                else {this.monstre1.anims.play('rightp', true);}}
+            else{this.monstre1.anims.play('sleepp', true);
+                this.monstre1.setVelocityX(0);
+                this.monstre1.setVelocityY(0);
+                this.hitbox1.setVelocityX(0);
+                this.hitbox1.setVelocityY(0);
+                this.tapep = false;this.onep = true;}
+            }
+
+        tpscene(){
+        this.scene.start("scene4"),{vie:this.vie,piece:this.piece}}
+        
+    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+class scene4 extends Phaser.Scene{
+        constructor(){
+            super("scene4"); 
+        }
+        init(data){this.vie = data.vie,this.piece = data.piece}
+        preload(){
+            this.load.image('plaine', 'Asset-TCON/Enviro-1.png');
+            this.load.tilemapTiledJSON("map3", "Plaine.json")
+            this.load.image('proj', 'Asset-TCON/Projectile.png');
+            this.load.image('tp', 'Asset-TCON/tp.png');
+            this.load.image('hitbox', 'Asset-TCON/hitbox.png',);
+            this.load.image('vie1', 'Asset-TCON/vie1.png',);
+            this.load.image('vie2', 'Asset-TCON/vie2.png',);
+            this.load.image('vie3', 'Asset-TCON/vie3.png',);
+            this.load.image('vie4', 'Asset-TCON/vie4.png',);
+            this.load.image('vie5', 'Asset-TCON/vie5.png',);
+            this.load.image('arme', 'Asset-TCON/armeI.png',);
+            this.load.image('bombe', 'Asset-TCON/poudreI.png',);
+            this.load.image('sans', 'Asset-TCON/armeI-sanspoudre.png',);
+            //Personnages
+            this.load.spritesheet('perso-att','Asset-TCON/Perso-Evil-Att-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('perso-evil','Asset-TCON/Perso-Evil-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('plante','Asset-TCON/Plante-Sheet.png',
+            { frameWidth: 32, frameHeight: 20 });
+        }
+        create(){
+            //Importation Tiled et Layers
+            const mapNiveau3 = this.make.tilemap({ key : "map3", tileWidth: 1920, tileHeight: 640});
+            const tileset3 = mapNiveau3.addTilesetImage("Enviro-1","plaine");
+            const sol = mapNiveau3.createLayer("sol",tileset3, 0, 0);
+            const falaise = mapNiveau3.createLayer("falaise",tileset3, 0, 0);
+            const chemin = mapNiveau3.createLayer("chemin",tileset3, 0, 0);
+            const potos = mapNiveau3.createLayer("potos",tileset3, 0, 0);
+            const herbe2 = mapNiveau3.createLayer("herbe2",tileset3, 0, 0);
+            const herbe = mapNiveau3.createLayer("herbe1",tileset3, 0, 0);
+            const foret3 = mapNiveau3.createLayer("foret3",tileset3, 0, 0);            
+            const foret2 = mapNiveau3.createLayer("foret2",tileset3, 0, 0);
+            const foret1 = mapNiveau3.createLayer("foret1",tileset3, 0, 0);
+            const caillou = mapNiveau3.createLayer("caillou",tileset3, 0, 0);
+            const plante = mapNiveau3.createLayer("plante",tileset3, 0, 0);
+            const eau = mapNiveau3.createLayer("eau",tileset3, 0, 0);
+            const pont = mapNiveau3.createLayer("pont",tileset3, 0, 0);
+
+            //Collisions Layers
+            this.physics.add.collider(this.player, eau);
+            this.physics.add.collider(this.monstre1, eau);
+            eau.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, foret1);
+            this.physics.add.collider(this.monstre1, foret1);
+            foret1.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player,foret2);
+            this.physics.add.collider(this.monstre1,foret2);
+            foret2.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, potos);
+            this.physics.add.collider(this.monstre1, potos);
+            potos.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, foret3);
+            this.physics.add.collider(this.monstre1, foret3);
+            foret3.setCollisionByProperty({"estsolide": true})
+            this.physics.add.collider(this.player, falaise);
+            this.physics.add.collider(this.monstre1, falaise);
+            falaise.setCollisionByProperty({"estsolide": true})
+
+            //Redimentionnement du monde
+            this.physics.world.setBounds(0, 0, 1920, 640);
+            //Ajout du champs de la camera de taille identique à celle du monde
+            this.cameras.main.setBounds(0, 0, 1920, 640);
+
+            //Perso
+            this.player = this.physics.add.sprite(1725, 20, 'perso-evil');
+            this.player.body.setSize(19,25, true);
+            this.player.setCollideWorldBounds(true);
+
+            //Animation Perso-Evil
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'base',
+                frames: [ { key: 'perso-evil', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Animation Perso-Evil-Attaque
+            this.anims.create({
+                key: 'lefta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:15,end:19}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'righta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:10,end:14}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'upa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:5,end:9}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'downa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:0,end:4}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Plante
+            this.monstre1 = this.physics.add.sprite(1130, 400, 'plante').play('sleepp');
+            this.monstre1.body.setSize(20,20, true);
+            this.monstre1.setCollideWorldBounds(true);
+            this.physics.add.collider(this.monstre1, this.monstre2);
+            this.physics.add.collider(this.monstre1, this.monstre3);
+            //Animation Plante
+            this.anims.create({
+                key: 'sleepp',
+                frames: [ { key: 'plante', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'wakeupp',
+                frames: this.anims.generateFrameNumbers('plante', {start:0,end:5}),
+                frameRate: 50,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'leftp',
+                frames: this.anims.generateFrameNumbers('plante', {start:5,end:8}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'rightp',
+                frames: this.anims.generateFrameNumbers('plante', {start:8,end:5}),
+                frameRate: 10,
+                repeat: -1
+                });
+            //Interactions Plante/Player
+            this.hitbox1 = this.physics.add.sprite(this.monstre1.body.x + 15, this.monstre1.body.y + 14, 'hitbox');
+            this.tapep = false;
+            this.onep = true;
+            this.physics.add.overlap(this.player, this.hitbox1, this.monstre1Follow, null, this);
+            //this.physics.add.collider(this.player, this.monstre1, this.monstre1att, null, this)
+
+            //Camera
+            this.cameras.main.startFollow(this.player, true);
+            this.cameras.main.setZoom(3);
+            this.cameras.main.setSize(1280, 720);
+
+            //Jeu
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keyC;
+            this.keyM;
+            this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+            
+            //Teleporteur vers Scene 2
+            this.tp = this.physics.add.sprite(160, 5, 'tp');
+            this.physics.add.collider(this.player, this.tp, this.tpscene, null, this);
+
+            //Afficher texte sur l'Ecran
+            this.pieceTxt=this.add.text(835,260,'0',{fontSize:'20px',fill:'#000'}).setScrollFactor(0);
+            this.sceneText=this.add.text(430,273,'Scene 3',{fontSize:'10px',fill:'#000'}).setScrollFactor(0);
+
+            //Icone Vie
+            this.vies = this.add.image(470,260, 'vie1')
+            this.vies.setScrollFactor(0);
+
+            this.Sans = this.add.image(770,260, 'sans')
+            this.Sans.setScrollFactor(0);
+
+            this.controls=this.add.text(530,250,'Control: Clavier (m)',{fontSize:'13px',fill:'#000'});
+            this.controls.setScrollFactor(0);
+            this.control = ''
+
+        }
+        update(){
+            if (this.gameOver){return;}
+            this.input.on('pointerdown', function (pointer) {
+                //menuDebut.destroy();
+                //startTimer = true
+            })
+            this.input.gamepad.once('connected', function (pad){
+                console.log(this.scene)
+                this.scene.connect = true
+                this.scene.manette = pad});
+                //Clique sur M = Manette
+                if (this.keyM.isDown && this.change == false)
+                    {console.log('Manette');
+                    this.change = true;
+                    this.control = 'Manette (c)';
+                    this.controls.setText('Control: ' + this.control);
+                    //this.icone.setTexture('Manette');
+                }
+                //Clique sur C = Clavier  
+                if (this.keyC.isDown && this.change == true)
+                    {console.log('Clavier');
+                    this.change = false;
+                    this.control = 'Clavier (m)';
+                    this.controls.setText('Control: ' + this.control);
+                }
+
+            //Controls Clavier
+            if (this.change == false){
+                if (this.cursors.up.isDown){
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityY(-150);
+                            this.player.anims.play('down', true);}
+                }
+                else if (this.cursors.down.isDown){
+                            this.player.setVelocityY(150);
+                            this.player.anims.play('up', true);}
+                else if (this.cursors.left.isDown){
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityX(-150);
+                            this.player.anims.play('left', true);}
+                }
+                else if (this.cursors.right.isDown){
+                            this.player.setVelocityX(150);
+                            this.player.anims.play('right', true);}
+                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+
+            //Controls Manette
+            if (this.connect == true && this.change == true){ 
+                    
+                if (this.manette.leftStick.x >0.5 ){
+                        this.player.setVelocityX(120);
+                        this.player.anims.play('right', true);}
+                    else if (this.manette.leftStick.x < -0.5){
+                        this.player.setVelocityX(-120);
+                        this.player.anims.play('left', true);}
+                    else if (this.manette.leftStick.y < -0.5){
+                        this.player.setVelocityY(-120);
+                        this.player.anims.play('down', true);} 
+                    else if (this.manette.leftStick.y >0.5){
+                        this.player.setVelocityY(120);
+                        this.player.anims.play('up', true);}  
+                    else {
+                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+                        this.player.anims.play('base');}
+                    }
+        }
+        touche(){
+            this.cassable.setVisible(false);
+            this.cassable.disableBody(true,true);}
+
+        monstre1Follow(){
+            if (this.onep == true){
+                this.monstre1.anims.play('wakeupp', true);
+                this.onep = false;
+                this.tapep = true;}
+            if (this.tapep == true){
+                this.physics.moveToObject(this.monstre1, this.player, 40)
+                this.physics.moveToObject(this.hitbox1, this.monstre1, 40)
+            if (this.monstre1.body.velocity.x < 0 ){
+                this.monstre1.anims.play('leftp', true)}
+                else {this.monstre1.anims.play('rightp', true);}}
+            else{this.monstre1.anims.play('sleepp', true);
+                this.monstre1.setVelocityX(0);
+                this.monstre1.setVelocityY(0);
+                this.hitbox1.setVelocityX(0);
+                this.hitbox1.setVelocityY(0);
+                this.tapep = false;this.onep = true;}
+            }
+        
+        tpscene(){
+        this.scene.start("scene5"),{vie:this.vie,piece:this.piece}}
+        
+    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+class scene5 extends Phaser.Scene{
+        constructor(){
+            super("scene5"); 
+        }
+        init(data){this.vie = data.vie,this.piece = data.piece}
+        preload(){
+            this.load.image('village1', 'Asset-TCON/Enviro-1.png');
+            this.load.tilemapTiledJSON("map1", "Village.json");
+            this.load.image('proj', 'Asset-TCON/Projectile.png');
+            this.load.image('tp', 'Asset-TCON/tp.png');
+            this.load.image('hitbox','Asset-TCON/hitbox.png');
+            this.load.image('vie1', 'Asset-TCON/vie1.png');
+            this.load.image('vie2', 'Asset-TCON/vie2.png');
+            this.load.image('vie3', 'Asset-TCON/vie3.png');
+            this.load.image('vie4', 'Asset-TCON/vie4.png');
+            this.load.image('vie5', 'Asset-TCON/vie5.png');
+            this.load.image('arme', 'Asset-TCON/armeI.png');
+            this.load.image('bombe', 'Asset-TCON/poudreI.png');
+            this.load.image('sans', 'Asset-TCON/armeI-sanspoudre.png');
+            this.load.image('bois', 'Asset-TCON/bois-village2.png');
+            //Personnages
+            this.load.spritesheet('perso-att','Asset-TCON/Perso-Evil-Att-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('perso-evil','Asset-TCON/Perso-Evil-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+        }
+        create(){
+           //Importation Tiled et Layers
+           const mapNiveau = this.make.tilemap({ key : "map1", tileWidth: 960, tileHeight: 1280});
+            const tileset = mapNiveau.addTilesetImage("Enviro-1","village1");
+            const sol = mapNiveau.createLayer("sol",tileset, 0, 0);
+            const falaise = mapNiveau.createLayer("falaise",tileset, 0, 0);
+            const chemin = mapNiveau.createLayer("chemin",tileset, 0, 0);
+            const potos = mapNiveau.createLayer("potos",tileset, 0, 0);
+            const herbe2 = mapNiveau.createLayer("herbe2",tileset, 0, 0);
+            const herbe = mapNiveau.createLayer("herbe",tileset, 0, 0);
+            const foret3 = mapNiveau.createLayer("foret3",tileset, 0, 0);
+            const foret2 = mapNiveau.createLayer("foret2",tileset, 0, 0);
+            const foret1 = mapNiveau.createLayer("foret1",tileset, 0, 0);
+            const caillou = mapNiveau.createLayer("caillou",tileset, 0, 0);
+            const plante = mapNiveau.createLayer("plante",tileset, 0, 0);
+            const eau = mapNiveau.createLayer("eau",tileset, 0, 0);
+
+            //Collisions Layers
+            this.physics.add.collider(this.player, eau);
+            eau.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, foret1);
+            foret1.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player,foret2);
+            foret2.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, foret3);
+            foret3.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, potos);
+            potos.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, falaise);
+            falaise.setCollisionByProperty({"estsolide": true});
+            
+            //Redimentionnement du monde
+            this.physics.world.setBounds(0, 0, 1280, 960);
+            //Ajout du champs de la caméra de taille identique à celle du monde
+            this.cameras.main.setBounds(0, 0, 1280, 960);
+
+            //Perso
+            this.player = this.physics.add.sprite(190, 945, 'perso-evil');
+            this.player.body.setSize(19,25, true);
+            this.player.setCollideWorldBounds(true);
+
+            //Animation Perso-Evil
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'base',
+                frames: [ { key: 'perso-evil', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Animation Perso-Evil-Attaque
+            this.anims.create({
+                key: 'lefta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:15,end:19}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'righta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:10,end:14}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'upa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:5,end:9}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'downa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:0,end:4}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Jeu
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keyC;
+            this.keyM;
+            this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+
+            //Camera
+            this.cameras.main.startFollow(this.player, true);
+            this.cameras.main.setZoom(3);
+            this.cameras.main.setSize(1280, 720);
+
+            //Afficher texte sur l'Ecran
+            this.piece = 0;
+            this.pieceTxt=this.add.text(835,260,'0',{fontSize:'20px',fill:'#000'}).setScrollFactor(0);
+            this.sceneText=this.add.text(430,273,'Scene 1',{fontSize:'10px',fill:'#000'}).setScrollFactor(0);
+
+
+            //Teleporteur vers Scene 2
+            this.tp = this.physics.add.sprite(10, 270, 'tp');
+            this.physics.add.collider(this.player, this.tp, this.tpscene, null, this);
+            
+            //var startTimer = false;
+            this.connect = false;
+            this.manette;
+            this.change = false;
+            //Icone Vie
+            this.vie = 1
+            this.vies = this.add.image(470,260, 'vie1')
+            this.vies.setScrollFactor(0);
+
+            this.Sans = this.add.image(770,260, 'sans')
+            this.Sans.setScrollFactor(0);
+
+            this.controls=this.add.text(530,250,'Control: Clavier (m)',{fontSize:'13px',fill:'#000'});
+            this.controls.setScrollFactor(0);
+            this.control = ''
+
+            //Speciale
+            this.cassable = this.physics.add.sprite(1260, 655, 'bois');
+            this.physics.add.collider(this.player, this.cassable, this.touche, null, this);
+        }
+        update(){
+            if (this.gameOver){return;}
+            this.input.on('pointerdown', function (pointer) {
+                //menuDebut.destroy();
+                //startTimer = true
+            })
+            this.input.gamepad.once('connected', function (pad){
+                console.log(this.scene)
+                this.scene.connect = true
+                this.scene.manette = pad});
+                //Clique sur M = Manette
+                if (this.keyM.isDown && this.change == false)
+                    {console.log('Manette');
+                    this.change = true;
+                    this.control = 'Manette (c)';
+                    this.controls.setText('Control: ' + this.control);
+                    //this.icone.setTexture('Manette');
+                }
+                //Clique sur C = Clavier  
+                if (this.keyC.isDown && this.change == true)
+                    {console.log('Clavier');
+                    this.change = false;
+                    this.control = 'Clavier (m)';
+                    this.controls.setText('Control: ' + this.control);
+                }
+
+            //Controls Clavier
+            if (this.change == false){
+                if (this.cursors.up.isDown){
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityY(-150);
+                            this.player.anims.play('down', true);}
+                }
+                else if (this.cursors.down.isDown){
+                            this.player.setVelocityY(150);
+                            this.player.anims.play('up', true);}
+                else if (this.cursors.left.isDown){
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityX(-150);
+                            this.player.anims.play('left', true);}
+                }
+                else if (this.cursors.right.isDown){
+                            this.player.setVelocityX(150);
+                            this.player.anims.play('right', true);}
+                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+
+            //Controls Manette
+            if (this.connect == true && this.change == true){ 
+                    
+                if (this.manette.leftStick.x >0.5 ){
+                        this.player.setVelocityX(120);
+                        this.player.anims.play('right', true);}
+                    else if (this.manette.leftStick.x < -0.5){
+                        this.player.setVelocityX(-120);
+                        this.player.anims.play('left', true);}
+                    else if (this.manette.leftStick.y < -0.5){
+                        this.player.setVelocityY(-120);
+                        this.player.anims.play('down', true);} 
+                    else if (this.manette.leftStick.y >0.5){
+                        this.player.setVelocityY(120);
+                        this.player.anims.play('up', true);}  
+                    else {
+                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+                        this.player.anims.play('base');}
+                    }
+        }
+        touche(cassable){
+            this.cassable.setVisible(false);
+            this.cassable.disableBody(true,true);
+        }
+        tpscene(){
+        this.scene.start("scene6"),{vie: this.vie,piece: this.piece}}
+        
+    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+class scene6 extends Phaser.Scene{
+        constructor(){
+            super("scene6"); 
+        }
+        init(data){this.vie = data.vie,this.piece = data.piece}
+        preload(){
+            this.load.image('cimetere', 'Asset-TCON/Enviro-2.png');
+            this.load.tilemapTiledJSON("map4", "Cimetere.json");
+            this.load.image('proj', 'Asset-TCON/Projectile.png');
+            this.load.image('tp', 'Asset-TCON/tp.png');
+            this.load.image('hitbox','Asset-TCON/hitbox.png');
+            this.load.image('vie1', 'Asset-TCON/vie1.png');
+            this.load.image('vie2', 'Asset-TCON/vie2.png');
+            this.load.image('vie3', 'Asset-TCON/vie3.png');
+            this.load.image('vie4', 'Asset-TCON/vie4.png');
+            this.load.image('vie5', 'Asset-TCON/vie5.png');
+            this.load.image('arme', 'Asset-TCON/armeI.png');
+            this.load.image('bombe', 'Asset-TCON/poudreI.png');
+            this.load.image('sans', 'Asset-TCON/armeI-sanspoudre.png');
+            //Personnages
+            this.load.spritesheet('perso-att','Asset-TCON/Perso-Evil-Att-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('perso-evil','Asset-TCON/Perso-Evil-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('squelette','Asset-TCON/Squelette-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+        }
+        create(){
+            //Importation Tiled et Layers
+           const mapNiveau4 = this.make.tilemap({ key : "map4", tileWidth: 960, tileHeight: 640});
+            const tileset4 = mapNiveau4.addTilesetImage("Enviro-2","cimetere");
+            const sol = mapNiveau4.createLayer("sol",tileset4, 0, 0);
+            const chemin = mapNiveau4.createLayer("chemin",tileset4, 0, 0);
+            const potos = mapNiveau4.createLayer("potos",tileset4, 0, 0);
+            const foret2 = mapNiveau4.createLayer("foret2",tileset4, 0, 0);
+            const foret1 = mapNiveau4.createLayer("foret1",tileset4, 0, 0);
+            const herbe2 = mapNiveau4.createLayer("herbe2",tileset4, 0, 0);
+            const herbe = mapNiveau4.createLayer("herbe1",tileset4, 0, 0);
+            const caillou = mapNiveau4.createLayer("caillou",tileset4, 0, 0);
+            const plante = mapNiveau4.createLayer("plante",tileset4, 0, 0);
+            const decor = mapNiveau4.createLayer("decor",tileset4, 0, 0);
+
+            //Collisions Layers
+            this.physics.add.collider(this.player, decor);
+            this.physics.add.collider(this.monstre2, decor);
+            decor.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, foret1);
+            this.physics.add.collider(this.monstre2, foret1);
+            foret1.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player,foret2);
+            this.physics.add.collider(this.monstre2,foret2);
+            foret2.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, potos);
+            this.physics.add.collider(this.monstre2, potos);
+            potos.setCollisionByProperty({"estsolide": true});
+            
+            //Redimentionnement du monde
+            this.physics.world.setBounds(0, 0, 960, 640);
+            //Ajout du champs de la caméra de taille identique à celle du monde
+            this.cameras.main.setBounds(0, 0, 960, 640);
+
+            //Perso
+            this.player = this.physics.add.sprite(950, 580, 'perso-evil');
+            this.player.body.setSize(19,25, true);
+            this.player.setCollideWorldBounds(true);
+
+            //Animation Perso-Evil
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'base',
+                frames: [ { key: 'perso-evil', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Animation Perso-Evil-Attaque
+            this.anims.create({
+                key: 'lefta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:15,end:19}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'righta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:10,end:14}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'upa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:5,end:9}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'downa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:0,end:4}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Squelette
+            this.monstre2 = this.physics.add.sprite(250, 350, 'squelette').play('bases');
+            this.monstre2.body.setSize(18,25, true);
+            this.monstre2.setCollideWorldBounds(true);
+            this.physics.add.collider(this.monstre2, this.monstre1);
+            this.physics.add.collider(this.monstre2, this.monstre3);
+            //Animation Squelette
+            this.anims.create({
+                key: 'bases',
+                frames: [ { key: 'squelette', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'lefts',
+                frames: this.anims.generateFrameNumbers('squelette', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'rights',
+                frames: this.anims.generateFrameNumbers('squelette', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'downs',
+                frames: this.anims.generateFrameNumbers('squelette', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'ups',
+                frames: this.anims.generateFrameNumbers('squelette', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+            //Interaction Squelette/Player
+            this.hitbox2 = this.physics.add.sprite(this.monstre2.body.x + 15, this.monstre2.body.y + 14, 'hitbox');
+            this.ones = true;
+            this.tapes = false;
+            this.physics.add.overlap(this.player, this.hitbox2, this.monstre2Follow, null, this);
+            //this.physics.add.collider(this.player, this.monstre2, this.monstre2att, null, this)
+
+            //Jeu
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keyC;
+            this.keyM;
+            this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+
+            //Camera
+            this.cameras.main.startFollow(this.player, true);
+            this.cameras.main.setZoom(3);
+            this.cameras.main.setSize(1280, 720);
+
+            //Afficher texte sur l'Ecran
+            this.piece = 0;
+            this.pieceTxt=this.add.text(835,260,'0',{fontSize:'20px',fill:'#000'}).setScrollFactor(0);
+            this.sceneText=this.add.text(430,273,'Scene 1',{fontSize:'10px',fill:'#000'}).setScrollFactor(0);
+
+            //Teleporteur vers Scene 2
+            this.tp = this.physics.add.sprite(130, 5, 'tp');
+            this.physics.add.collider(this.player, this.tp, this.tpscene, null, this);
+            
+            //var startTimer = false;
+            this.connect = false;
+            this.manette;
+            this.change = false;
+            //Icone Vie
+            this.vie = 1
+            this.vies = this.add.image(470,260, 'vie1')
+            this.vies.setScrollFactor(0);
+
+            this.Sans = this.add.image(770,260, 'sans')
+            this.Sans.setScrollFactor(0);
+
+            this.controls=this.add.text(530,250,'Control: Clavier (m)',{fontSize:'13px',fill:'#000'});
+            this.controls.setScrollFactor(0);
+            this.control = ''
+        }
+        update(){
+            if (this.gameOver){return;}
+            this.input.on('pointerdown', function (pointer) {
+                //menuDebut.destroy();
+                //startTimer = true
+            })
+            this.input.gamepad.once('connected', function (pad){
+                console.log(this.scene)
+                this.scene.connect = true
+                this.scene.manette = pad});
+                //Clique sur M = Manette
+                if (this.keyM.isDown && this.change == false)
+                    {console.log('Manette');
+                    this.change = true;
+                    this.control = 'Manette (c)';
+                    this.controls.setText('Control: ' + this.control);
+                    //this.icone.setTexture('Manette');
+                }
+                //Clique sur C = Clavier  
+                if (this.keyC.isDown && this.change == true)
+                    {console.log('Clavier');
+                    this.change = false;
+                    this.control = 'Clavier (m)';
+                    this.controls.setText('Control: ' + this.control);
+                }
+
+            //Controls Clavier
+            if (this.change == false){
+                if (this.cursors.up.isDown){
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityY(-150);
+                            this.player.anims.play('down', true);}
+                }
+                else if (this.cursors.down.isDown){
+                            this.player.setVelocityY(150);
+                            this.player.anims.play('up', true);}
+                else if (this.cursors.left.isDown){
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityX(-150);
+                            this.player.anims.play('left', true);}
+                }
+                else if (this.cursors.right.isDown){
+                            this.player.setVelocityX(150);
+                            this.player.anims.play('right', true);}
+                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+
+            //Controls Manette
+            if (this.connect == true && this.change == true){ 
+                    
+                if (this.manette.leftStick.x >0.5 ){
+                        this.player.setVelocityX(120);
+                        this.player.anims.play('right', true);}
+                    else if (this.manette.leftStick.x < -0.5){
+                        this.player.setVelocityX(-120);
+                        this.player.anims.play('left', true);}
+                    else if (this.manette.leftStick.y < -0.5){
+                        this.player.setVelocityY(-120);
+                        this.player.anims.play('down', true);} 
+                    else if (this.manette.leftStick.y >0.5){
+                        this.player.setVelocityY(120);
+                        this.player.anims.play('up', true);}  
+                    else {
+                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+                        this.player.anims.play('base');}
+                    }
+        }
+        monstre2Follow(){
+            if (this.ones == true){
+                this.ones = false;
+                this.tapes = true;}
+            if (this.tapes == true){
+                this.physics.moveToObject(this.monstre2, this.player, 50)
+                this.physics.moveToObject(this.hitbox2, this.monstre2, 50)
+                if (this.monstre2.body.velocity.x < 0){
+                    if (this.monstre2.body.velocity.y > 0 ){
+                        this.monstre2.anims.play('downs', true);}
+                    else {this.monstre2.anims.play('lefts', true);}}
+                if (this.monstre2.body.velocity.x > 0){
+                    if (this.monstre2.body.velocity.y > 0){
+                        this.monstre2.anims.play('rights', true);}
+                    else {this.monstre2.anims.play('ups', true);}}}
+            else {this.monstre2.setVelocityX(0);
+                this.monstre2.setVelocityY(0);
+                this.hitbox2.setVelocityX(0);
+                this.hitbox2.setVelocityY(0);
+                this.monstre2.anims.play('bases',true);
+                this.tapes = false;this.ones = true;}
+            }      
+        tpscene(){
+            this.scene.start("scene7"),{vie: this.vie,piece: this.piece}}
+        
+    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+class scene7 extends Phaser.Scene{
+        constructor(){
+            super("scene7"); 
+        }
+        init(data){this.vie = data.vie,this.piece = data.piece}
+        preload(){
+            this.load.image('voyante', 'Asset-TCON/Enviro-3.png');
+            this.load.tilemapTiledJSON("map5", "Voyante.json");
+            this.load.image('proj', 'Asset-TCON/Projectile.png');
+            this.load.image('tp', 'Asset-TCON/tp.png');
+            this.load.image('hitbox','Asset-TCON/hitbox.png');
+            this.load.image('vie1', 'Asset-TCON/vie1.png');
+            this.load.image('vie2', 'Asset-TCON/vie2.png');
+            this.load.image('vie3', 'Asset-TCON/vie3.png');
+            this.load.image('vie4', 'Asset-TCON/vie4.png');
+            this.load.image('vie5', 'Asset-TCON/vie5.png');
+            this.load.image('arme', 'Asset-TCON/armeI.png');
+            this.load.image('bombe', 'Asset-TCON/poudreI.png');
+            this.load.image('avec', 'Asset-TCON/Inventaire.png');
+            //Personnages
+            this.load.spritesheet('perso-att','Asset-TCON/Perso-Evil-Att-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+            this.load.spritesheet('perso-evil','Asset-TCON/Perso-Evil-Sheet.png',
+            { frameWidth: 32, frameHeight: 26 });
+        }
+        create(){
+            //Importation Tiled et Layers
+            const mapNiveau5 = this.make.tilemap({ key : "map5", tileWidth: 640, tileHeight: 640});
+            const tileset5 = mapNiveau5.addTilesetImage("Enviro-3","voyante");
+            const sol = mapNiveau5.createLayer("sol",tileset5, 0, 0);
+            const falaise = mapNiveau5.createLayer("falaise",tileset5, 0, 0);
+            const chemin = mapNiveau5.createLayer("chemin",tileset5, 0, 0);
+            const potos = mapNiveau5.createLayer("potos",tileset5, 0, 0);
+            const plante2 = mapNiveau5.createLayer("plante2",tileset5, 0, 0);
+            const plante1 = mapNiveau5.createLayer("plante1",tileset5, 0, 0);
+            const castus = mapNiveau5.createLayer("castus",tileset5, 0, 0);
+
+            //Collisions Layers
+            this.physics.add.collider(this.player, castus);
+            castus.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, falaise);
+            falaise.setCollisionByProperty({"estsolide": true});
+            this.physics.add.collider(this.player, potos);
+            potos.setCollisionByProperty({"estsolide": true});
+            
+            //Redimentionnement du monde
+            this.physics.world.setBounds(0, 0, 640, 640);
+            //Ajout du champs de la caméra de taille identique à celle du monde
+            this.cameras.main.setBounds(0, 0, 640, 640);
+
+            //Perso
+            this.player = this.physics.add.sprite(162, 610, 'perso-evil');
+            this.player.body.setSize(19,25, true);
+            this.player.setCollideWorldBounds(true);
+
+            //Animation Perso-Evil
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:12,end:15}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'base',
+                frames: [ { key: 'perso-evil', frame: 0 } ],
+                frameRate: 0
+                });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:8,end:11}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'up',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:0,end:3}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'down',
+                frames: this.anims.generateFrameNumbers('perso-evil', {start:4,end:7}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Animation Perso-Evil-Attaque
+            this.anims.create({
+                key: 'lefta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:15,end:19}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'righta',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:10,end:14}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'upa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:5,end:9}),
+                frameRate: 10,
+                repeat: -1
+                });
+            this.anims.create({
+                key: 'downa',
+                frames: this.anims.generateFrameNumbers('perso-att', {start:0,end:4}),
+                frameRate: 10,
+                repeat: -1
+                });
+
+            //Jeu
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keyC;
+            this.keyM;
+            this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+
+            //Camera
+            this.cameras.main.startFollow(this.player, true);
+            this.cameras.main.setZoom(3);
+            this.cameras.main.setSize(1280, 720);
+
+            //Afficher texte sur l'Ecran
+            this.piece = 0;
+            this.pieceTxt=this.add.text(835,260,'0',{fontSize:'20px',fill:'#000'}).setScrollFactor(0);
+            this.sceneText=this.add.text(430,273,'Scene 5',{fontSize:'10px',fill:'#000'}).setScrollFactor(0);
+
+            //Teleporteur vers Scene 2
+            this.tp = this.physics.add.sprite(163, 650, 'tp');
+            this.physics.add.collider(this.player, this.tp, this.tpscene, null, this);
+            
+            //var startTimer = false;
+            this.connect = false;
+            this.manette;
+            this.change = false;
+            //Icone Vie
+            this.vie = 1
+            this.vies = this.add.image(470,260, 'vie1')
+            this.vies.setScrollFactor(0)
+
+            this.Sans = this.add.image(770,260, 'sans')
+            this.Sans.setScrollFactor(0)
+
+            this.controls=this.add.text(530,250,'Control: Clavier (m)',{fontSize:'13px',fill:'#000'});
+            this.controls.setScrollFactor(0);
+            this.control = ''
+        }
+        update(){
+            if (this.gameOver){return;}
+            this.input.on('pointerdown', function (pointer) {
+                //menuDebut.destroy();
+                //startTimer = true
+            })
+            this.input.gamepad.once('connected', function (pad){
+                console.log(this.scene)
+                this.scene.connect = true
+                this.scene.manette = pad});
+                //Clique sur M = Manette
+                if (this.keyM.isDown && this.change == false)
+                    {console.log('Manette');
+                    this.change = true;
+                    this.control = 'Manette (c)';
+                    this.controls.setText('Control: ' + this.control);
+                    //this.icone.setTexture('Manette');
+                }
+                //Clique sur C = Clavier  
+                if (this.keyC.isDown && this.change == true)
+                    {console.log('Clavier');
+                    this.change = false;
+                    this.control = 'Clavier (m)';
+                    this.controls.setText('Control: ' + this.control);
+                }
+
+            //Controls Clavier
+            if (this.change == false){
+                if (this.cursors.up.isDown){
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityY(-150);
+                            this.player.anims.play('down', true);}
+                }
+                else if (this.cursors.down.isDown){
+                            this.player.setVelocityY(150);
+                            this.player.anims.play('up', true);}
+                else if (this.cursors.left.isDown){
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                        this.player.anims.play('base', true);}
+                    else {
+                            this.player.setVelocityX(-150);
+                            this.player.anims.play('left', true);}
+                }
+                else if (this.cursors.right.isDown){
+                            this.player.setVelocityX(150);
+                            this.player.anims.play('right', true);}
+                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+
+            //Controls Manette
+            if (this.connect == true && this.change == true){ 
+                    
+                if (this.manette.leftStick.x >0.5 ){
+                        this.player.setVelocityX(120);
+                        this.player.anims.play('right', true);}
+                    else if (this.manette.leftStick.x < -0.5){
+                        this.player.setVelocityX(-120);
+                        this.player.anims.play('left', true);}
+                    else if (this.manette.leftStick.y < -0.5){
+                        this.player.setVelocityY(-120);
+                        this.player.anims.play('down', true);} 
+                    else if (this.manette.leftStick.y >0.5){
+                        this.player.setVelocityY(120);
+                        this.player.anims.play('up', true);}  
+                    else {
+                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+                        this.player.anims.play('base');}
+                    }
+        }
+        tpscene(){
+            this.scene.start("scene8"),{vie:this.vie,piece:this.piece}}
+        
+    };
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//class scene8 extends Phaser.Scene{
+//        constructor(){
+//            super("scene8"); 
+//        }
+//        init(data){this.vie = data.vie,this.piece = data.piece}
+//        preload(){
+//
+//        }
+//        create(){
+//           
+//        }
+//        update(){
+//            if (this.gameOver){return;}
+//            this.input.on('pointerdown', function (pointer) {
+//                //menuDebut.destroy();
+//                //startTimer = true
+//            })
+//            this.input.gamepad.once('connected', function (pad){
+//                console.log(this.scene)
+//                this.scene.connect = true
+//                this.scene.manette = pad});
+//                //Clique sur M = Manette
+//                if (this.keyM.isDown && this.change == false)
+//                    {console.log('Manette');
+//                    this.change = true;
+//                    this.control = 'Manette (c)';
+//                    this.controls.setText('Control: ' + this.control);
+//                    //this.icone.setTexture('Manette');
+//                }
+//                //Clique sur C = Clavier  
+//                if (this.keyC.isDown && this.change == true)
+//                    {console.log('Clavier');
+//                    this.change = false;
+//                    this.control = 'Clavier (m)';
+//                    this.controls.setText('Control: ' + this.control);
+//                }
+//
+//            //Controls Clavier
+//            if (this.change == false){
+//                if (this.cursors.up.isDown){
+//                    if (this.cursors.down.isDown) {
+//                        this.player.setVelocityY(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityY(-150);
+//                            this.player.anims.play('down', true);}
+//                }
+//                else if (this.cursors.down.isDown){
+//                            this.player.setVelocityY(150);
+//                            this.player.anims.play('up', true);}
+//                else if (this.cursors.left.isDown){
+//                    if (this.cursors.right.isDown) {
+//                        this.player.setVelocityX(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityX(-150);
+//                            this.player.anims.play('left', true);}
+//                }
+//                else if (this.cursors.right.isDown){
+//                            this.player.setVelocityX(150);
+//                            this.player.anims.play('right', true);}
+//                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+//
+//            //Controls Manette
+//            if (this.connect == true && this.change == true){ 
+//                    
+//                if (this.manette.leftStick.x >0.5 ){
+//                        this.player.setVelocityX(120);
+//                        this.player.anims.play('right', true);}
+//                    else if (this.manette.leftStick.x < -0.5){
+//                        this.player.setVelocityX(-120);
+//                        this.player.anims.play('left', true);}
+//                    else if (this.manette.leftStick.y < -0.5){
+//                        this.player.setVelocityY(-120);
+//                        this.player.anims.play('down', true);} 
+//                    else if (this.manette.leftStick.y >0.5){
+//                        this.player.setVelocityY(120);
+//                        this.player.anims.play('up', true);}  
+//                    else {
+//                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+//                        this.player.anims.play('base');}
+//                    }
+//        }
+//        
+//    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//class scene9 extends Phaser.Scene{
+//        constructor(){
+//            super("scene9"); 
+//        }
+//        init(data){this.vie = data.vie,this.piece = data.piece}
+//        preload(){
+//
+//        }
+//        create(){
+//           
+//        }
+//        update(){
+//            if (this.gameOver){return;}
+//            this.input.on('pointerdown', function (pointer) {
+//                //menuDebut.destroy();
+//                //startTimer = true
+//            })
+//            this.input.gamepad.once('connected', function (pad){
+//                console.log(this.scene)
+//                this.scene.connect = true
+//                this.scene.manette = pad});
+//                //Clique sur M = Manette
+//                if (this.keyM.isDown && this.change == false)
+//                    {console.log('Manette');
+//                    this.change = true;
+//                    this.control = 'Manette (c)';
+//                    this.controls.setText('Control: ' + this.control);
+//                    //this.icone.setTexture('Manette');
+//                }
+//                //Clique sur C = Clavier  
+//                if (this.keyC.isDown && this.change == true)
+//                    {console.log('Clavier');
+//                    this.change = false;
+//                    this.control = 'Clavier (m)';
+//                    this.controls.setText('Control: ' + this.control);
+//                }
+//
+//            //Controls Clavier
+//            if (this.change == false){
+//                if (this.cursors.up.isDown){
+//                    if (this.cursors.down.isDown) {
+//                        this.player.setVelocityY(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityY(-150);
+//                            this.player.anims.play('down', true);}
+//                }
+//                else if (this.cursors.down.isDown){
+//                            this.player.setVelocityY(150);
+//                            this.player.anims.play('up', true);}
+//                else if (this.cursors.left.isDown){
+//                    if (this.cursors.right.isDown) {
+//                        this.player.setVelocityX(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityX(-150);
+//                            this.player.anims.play('left', true);}
+//                }
+//                else if (this.cursors.right.isDown){
+//                            this.player.setVelocityX(150);
+//                            this.player.anims.play('right', true);}
+//                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+//
+//            //Controls Manette
+//            if (this.connect == true && this.change == true){ 
+//                    
+//                if (this.manette.leftStick.x >0.5 ){
+//                        this.player.setVelocityX(120);
+//                        this.player.anims.play('right', true);}
+//                    else if (this.manette.leftStick.x < -0.5){
+//                        this.player.setVelocityX(-120);
+//                        this.player.anims.play('left', true);}
+//                    else if (this.manette.leftStick.y < -0.5){
+//                        this.player.setVelocityY(-120);
+//                        this.player.anims.play('down', true);} 
+//                    else if (this.manette.leftStick.y >0.5){
+//                        this.player.setVelocityY(120);
+//                        this.player.anims.play('up', true);}  
+//                    else {
+//                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+//                        this.player.anims.play('base');}
+//                    }
+//        }
+//        
+//    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//class scene10 extends Phaser.Scene{
+//        constructor(){
+//            super("scene10"); 
+//        }
+//        init(data){this.vie = data.vie,this.piece = data.piece}
+//        preload(){
+//
+//        }
+//        create(){
+//           
+//        }
+//        update(){
+//            if (this.gameOver){return;}
+//            this.input.on('pointerdown', function (pointer) {
+//                //menuDebut.destroy();
+//                //startTimer = true
+//            })
+//            this.input.gamepad.once('connected', function (pad){
+//                console.log(this.scene)
+//                this.scene.connect = true
+//                this.scene.manette = pad});
+//                //Clique sur M = Manette
+//                if (this.keyM.isDown && this.change == false)
+//                    {console.log('Manette');
+//                    this.change = true;
+//                    this.control = 'Manette (c)';
+//                    this.controls.setText('Control: ' + this.control);
+//                    //this.icone.setTexture('Manette');
+//                }
+//                //Clique sur C = Clavier  
+//                if (this.keyC.isDown && this.change == true)
+//                    {console.log('Clavier');
+//                    this.change = false;
+//                    this.control = 'Clavier (m)';
+//                    this.controls.setText('Control: ' + this.control);
+//                }
+//
+//            //Controls Clavier
+//            if (this.change == false){
+//                if (this.cursors.up.isDown){
+//                    if (this.cursors.down.isDown) {
+//                        this.player.setVelocityY(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityY(-150);
+//                            this.player.anims.play('down', true);}
+//                }
+//                else if (this.cursors.down.isDown){
+//                            this.player.setVelocityY(150);
+//                            this.player.anims.play('up', true);}
+//                else if (this.cursors.left.isDown){
+//                    if (this.cursors.right.isDown) {
+//                        this.player.setVelocityX(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityX(-150);
+//                            this.player.anims.play('left', true);}
+//                }
+//                else if (this.cursors.right.isDown){
+//                            this.player.setVelocityX(150);
+//                            this.player.anims.play('right', true);}
+//                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+//
+//            //Controls Manette
+//            if (this.connect == true && this.change == true){ 
+//                    
+//                if (this.manette.leftStick.x >0.5 ){
+//                        this.player.setVelocityX(120);
+//                        this.player.anims.play('right', true);}
+//                    else if (this.manette.leftStick.x < -0.5){
+//                        this.player.setVelocityX(-120);
+//                        this.player.anims.play('left', true);}
+//                    else if (this.manette.leftStick.y < -0.5){
+//                        this.player.setVelocityY(-120);
+//                        this.player.anims.play('down', true);} 
+//                    else if (this.manette.leftStick.y >0.5){
+//                        this.player.setVelocityY(120);
+//                        this.player.anims.play('up', true);}  
+//                    else {
+//                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+//                        this.player.anims.play('base');}
+//                    }
+//        }
+//        
+//    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//class scene11 extends Phaser.Scene{
+//        constructor(){
+//            super("scene11"); 
+//        }
+//        init(data){this.vie = data.vie,this.piece = data.piece}
+//        preload(){
+//
+//        }
+//        create(){
+//           
+//        }
+//        update(){
+//            if (this.gameOver){return;}
+//            this.input.on('pointerdown', function (pointer) {
+//                //menuDebut.destroy();
+//                //startTimer = true
+//            })
+//            this.input.gamepad.once('connected', function (pad){
+//                console.log(this.scene)
+//                this.scene.connect = true
+//                this.scene.manette = pad});
+//                //Clique sur M = Manette
+//                if (this.keyM.isDown && this.change == false)
+//                    {console.log('Manette');
+//                    this.change = true;
+//                    this.control = 'Manette (c)';
+//                    this.controls.setText('Control: ' + this.control);
+//                    //this.icone.setTexture('Manette');
+//                }
+//                //Clique sur C = Clavier  
+//                if (this.keyC.isDown && this.change == true)
+//                    {console.log('Clavier');
+//                    this.change = false;
+//                    this.control = 'Clavier (m)';
+//                    this.controls.setText('Control: ' + this.control);
+//                }
+//
+//            //Controls Clavier
+//            if (this.change == false){
+//                if (this.cursors.up.isDown){
+//                    if (this.cursors.down.isDown) {
+//                        this.player.setVelocityY(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityY(-150);
+//                            this.player.anims.play('down', true);}
+//                }
+//                else if (this.cursors.down.isDown){
+//                            this.player.setVelocityY(150);
+//                            this.player.anims.play('up', true);}
+//                else if (this.cursors.left.isDown){
+//                    if (this.cursors.right.isDown) {
+//                        this.player.setVelocityX(0);
+//                        this.player.anims.play('base', true);}
+//                    else {
+//                            this.player.setVelocityX(-150);
+//                            this.player.anims.play('left', true);}
+//                }
+//                else if (this.cursors.right.isDown){
+//                            this.player.setVelocityX(150);
+//                            this.player.anims.play('right', true);}
+//                else {this.player.setVelocityX(0);this.player.setVelocityY(0);this.player.anims.play('base', true);}}
+//
+//            //Controls Manette
+//            if (this.connect == true && this.change == true){ 
+//                    
+//                if (this.manette.leftStick.x >0.5 ){
+//                        this.player.setVelocityX(120);
+//                        this.player.anims.play('right', true);}
+//                    else if (this.manette.leftStick.x < -0.5){
+//                        this.player.setVelocityX(-120);
+//                        this.player.anims.play('left', true);}
+//                    else if (this.manette.leftStick.y < -0.5){
+//                        this.player.setVelocityY(-120);
+//                        this.player.anims.play('down', true);} 
+//                    else if (this.manette.leftStick.y >0.5){
+//                        this.player.setVelocityY(120);
+//                        this.player.anims.play('up', true);}  
+//                    else {
+//                        this.player.setVelocityX(0);this.player.setVelocityY(0);
+//                        this.player.anims.play('base');}
+//                    }
+//        }
+//        
+//    };
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    var config = {
+        input:{gamepad:true},
+        type: Phaser.AUTO,
+        width: 4800, 
+        height: 1088, 
+        pixelArt: true,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                debug: false
+            }},
+        scene: [scene1,scene2,scene3,scene4,scene5,scene6,scene7,menu]
+        };
+        new Phaser.Game(config);
+
+    </script>
+    </body>
+</html>
