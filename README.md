@@ -1,2 +1,3 @@
 # Jeu-Zelda_like
-En_cours...
+Final - BUG 
+-> Ne se déplace pas !
